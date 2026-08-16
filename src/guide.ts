@@ -30,6 +30,7 @@ export const PAPER_SERVER_DESCRIPTION = `Paper is a professional design tool for
 
 The extension injects the full paper-mcp-instructions guide into the system prompt for the first ${PAPER_GUIDE_INJECT_TURNS} agent turns after connect/reconnect (Cursor parity). After that, only these standing rules remain in the system prompt — use paper_get_guide for the full guide as needed.
 
+- Ensure Paper Desktop is running with a file open before using Paper tools. If a connection to the Paper MCP server fails, remind the user to open Paper Desktop first.
 - Context: call paper_get_basic_info first to understand artboards and dimensions; use paper_get_selection to see user focus.
 - Typography: you MUST call paper_get_font_family_info before your first typographic styling in a session. Prefer font families already listed in paper_get_basic_info unless the user specifies otherwise. Use px for font sizes, em for letter-spacing, px for line-height.
 - New designs: before writing HTML, generate a brief (palette, type scale, spacing, direction) unless the user provides a design system.
