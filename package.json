@@ -84,8 +84,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "verify": "node scripts/verify-paper-bridge.mjs",
+    "verify:bridge": "node scripts/boot-plugin.mts",
     "verify:parity": "node scripts/verify-parity.mjs",
     "verify:injection": "node scripts/verify-injection.mjs",
-    "test": "npm run build && npm run verify && npm run verify:parity && npm run verify:injection"
+    "test": "npm run build && npm run verify && npm run verify:bridge && npm run verify:parity && npm run verify:injection",
+    "test:unit": "vitest run"
   }
 }
