@@ -13,4 +13,4 @@
         paperDesign: true
       config:
         - id: paper-mcp
-          name: dsh-paper-design/src/index.ts
+          name: '@try-works/dsh-paper-design/src/index.ts'
