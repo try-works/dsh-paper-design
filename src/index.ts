@@ -20,6 +20,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { JsonValue, ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { PaperMcpClient, MCP_URL, type McpCallToolResult, type McpContentPart } from './mcp-client.ts'
+import { PaperAuthManager, openBrowser } from './auth.ts'
 import { normalizeToolSchema } from './schema.ts'
 import {
   PAPER_GUIDE_INJECT_TURNS,
@@ -61,6 +62,8 @@ interface PaperToolInfo {
 
 interface BridgeState {
   client: PaperMcpClient
+  /** OAuth client auth manager (dormant until the server advertises/challenges auth). */
+  auth: PaperAuthManager
   tools: PaperToolInfo[]
   guideText: string | null
   /** Remaining turns (counted at agent running transitions) that receive the full guide. */
@@ -247,6 +250,13 @@ function resolveAttachments(ctx: Context): AttachmentStore | undefined {
   return attachments as AttachmentStore
 }
 
+/** One-line auth status appended to the standing-rules section. */
+function renderAuthLine(status: { mode: string; configured: boolean; authenticated: boolean }): string {
+  if (status.mode === 'unauthenticated') return ''
+  const state = status.authenticated ? 'authenticated' : (status.configured ? 'configured (token present, may need refresh)' : 'not authenticated')
+  return `\n### Paper MCP auth\nOAuth mode; ${state}. Use /paper-auth-status for details, /paper-auth-login to (re)authenticate, /paper-auth-logout to clear tokens.\n`
+}
+
 /**
  * Apply the bridge: connect, discover tools, register them + prompt + skills.
  * Registration is gated on the attachment store only for the image-capable
@@ -256,14 +266,21 @@ function resolveAttachments(ctx: Context): AttachmentStore | undefined {
 export function apply(ctx: Context) {
   ctx.effect(async function* () {
     const client = new PaperMcpClient(MCP_URL)
+    const auth = new PaperAuthManager(MCP_URL)
     const state: BridgeState = {
       client,
+      auth,
       tools: [],
       guideText: null,
       injectTurnsLeft: PAPER_GUIDE_INJECT_TURNS,
       sessionTurns: new Map(),
       toolDisposers: [],
     }
+
+    // Auth manager owns OAuth discovery/token storage; the client attaches
+    // any bearer token and reports 401/403 challenges back to it.
+    await auth.init()
+    client.setAuthProvider(auth)
 
     const initialize = await client.initialize()
     if (initialize.error) {
@@ -302,10 +319,11 @@ export function apply(ctx: Context) {
       text: (context) => {
         const agentId = (context as { agent?: { id?: string } }).agent?.id
         const includeGuide = agentId !== undefined && includeGuideFor(state, agentId)
+        const authLine = renderAuthLine(state.auth.status())
         return buildPaperSystemPromptSuffix({
           includeGuide,
           guideText: state.guideText,
-        })
+        }) + authLine
       },
     })
 
@@ -351,12 +369,89 @@ export function apply(ctx: Context) {
       },
     })
 
+    // /paper-auth-status: report the current auth state without side effects.
+    const authStatusDisposer = ctx.commands.register({
+      name: 'paper-auth-status',
+      description: 'Show Paper MCP authentication state (unauthenticated localhost vs OAuth-configured).',
+      handler: async () => {
+        const status = state.auth.status()
+        const lines: string[] = [
+          `Paper MCP auth (${status.mode}):`,
+          `  server: ${status.serverUrl}`,
+          `  configured: ${status.configured ? 'yes' : 'no'}`,
+          `  authenticated: ${status.authenticated ? 'yes' : 'no'}`,
+        ]
+        if (status.expiresAt !== undefined) {
+          lines.push(`  access token expires: ${new Date(status.expiresAt).toISOString()}`)
+        }
+        if (status.discovery !== undefined) {
+          lines.push('  OAuth discovery:')
+          if (status.discovery.issuer !== undefined) lines.push(`    issuer: ${status.discovery.issuer}`)
+          if (status.discovery.authorizationEndpoint !== undefined) {
+            lines.push(`    authorization endpoint: ${status.discovery.authorizationEndpoint}`)
+          }
+          if (status.discovery.tokenEndpoint !== undefined) {
+            lines.push(`    token endpoint: ${status.discovery.tokenEndpoint}`)
+          }
+        }
+        if (status.challenge !== undefined) {
+          lines.push(`  last challenge: ${status.challenge}`)
+        }
+        if (status.lastError !== undefined) {
+          lines.push(`  last error: ${status.lastError}`)
+        }
+        return { kind: 'success', text: lines.join('\n') }
+      },
+    })
+
+    // /paper-auth-login: start the OAuth authorization flow (loops back to the
+    // loopback receiver; the URL is also returned for the user to open).
+    const authLoginDisposer = ctx.commands.register({
+      name: 'paper-auth-login',
+      description: 'Start the Paper MCP OAuth authorization flow (PKCE, loopback redirect).',
+      handler: async () => {
+        const status = state.auth.status()
+        if (status.mode !== 'oauth') {
+          return {
+            kind: 'error',
+            text: 'Paper Desktop MCP does not advertise OAuth; it is unauthenticated on localhost. No login needed.',
+          }
+        }
+        try {
+          const { url } = await state.auth.beginAuthorization()
+          openBrowser(url)
+          return {
+            kind: 'success',
+            text: `Paper authorization started. If the browser did not open, visit:
+${url}`,
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          return { kind: 'error', text: `Paper authorization failed: ${message}` }
+        }
+      },
+    })
+
+    // /paper-auth-logout: drop stored tokens.
+    const authLogoutDisposer = ctx.commands.register({
+      name: 'paper-auth-logout',
+      description: 'Clear stored Paper MCP OAuth tokens.',
+      handler: async () => {
+        await state.auth.logout()
+        return { kind: 'success', text: 'Paper MCP OAuth tokens cleared.' }
+      },
+    })
+
     yield () => {
       for (const dispose of state.toolDisposers) dispose()
       skillsDisposer()
       commandDisposer()
+      authStatusDisposer()
+      authLoginDisposer()
+      authLogoutDisposer()
       sectionDisposer()
       sessionObserver()
+      state.auth.dispose()
     }
   })
 }

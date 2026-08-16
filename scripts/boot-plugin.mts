@@ -42,5 +42,20 @@ console.log('EXEC isError:', result.isError)
 const text = result.content.map(c => c.type === 'text' ? c.text : '').join('')
 console.log('EXEC text len:', text.length)
 console.log('EXEC has artboards:', text.includes('artboards'))
+
+// Auth manager must boot without touching the network (Paper Desktop exposes
+// no OAuth discovery today) and report unauthenticated.
+await sleep(300)
+const state: any = fiber
+// The fiber is the plugin's applied context wrapper; the auth manager lives on
+// the closure state. Poll via a status surface instead: check the plugin
+// registered the auth commands by invoking the command service indirectly is
+// overkill — assert the observable: no tokens file was created and the plugin
+// booted cleanly. The auth path itself is covered by verify-auth.mts.
+const home = process.env.DSH_HOME ?? process.env.USERPROFILE + '/.dsh'
+const fs = await import('node:fs')
+const storeExists = fs.existsSync(home + '/paper-design/oauth.json')
+console.log('AUTH store absent on unauthenticated boot:', !storeExists)
+
 await fiber.dispose()
 console.log('DISPOSED OK; tools after dispose:', ctx.tools.schemas().length)

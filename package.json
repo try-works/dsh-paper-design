@@ -87,7 +87,8 @@
     "verify:bridge": "node scripts/boot-plugin.mts",
     "verify:parity": "node scripts/verify-parity.mjs",
     "verify:injection": "node scripts/verify-injection.mjs",
-    "test": "npm run build && npm run verify && npm run verify:bridge && npm run verify:parity && npm run verify:injection",
+    "verify:auth": "node scripts/verify-auth.mts",
+    "test": "npm run build && npm run verify && npm run verify:bridge && npm run verify:parity && npm run verify:injection && npm run verify:auth",
     "test:unit": "vitest run"
   }
 }

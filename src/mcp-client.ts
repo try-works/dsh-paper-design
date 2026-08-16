@@ -8,8 +8,15 @@
  * on session expiry, mirroring the transport behavior the pi-paper-design
  * bridge established against the same endpoint.
  *
+ * Auth: an optional {@link PaperMcpAuthProvider} supplies a bearer token that
+ * is attached as `Authorization` on every request, and is notified of 401/403
+ * `WWW-Authenticate` challenges so it can (re)start the OAuth flow. Without
+ * a provider the client remains plain unauthenticated Streamable HTTP.
+ *
  * @module dsh-paper-design/src/mcp-client
  */
+
+import type { PaperMcpAuthProvider } from './auth.ts'
 
 /** Paper Desktop MCP endpoint. */
 export const MCP_URL = 'http://127.0.0.1:29979/mcp'
@@ -56,6 +63,11 @@ export function isSessionError(message: string): boolean {
   )
 }
 
+/** True when an HTTP status demands (re)authentication. */
+export function isAuthChallengeStatus(status: number): boolean {
+  return status === 401 || status === 403
+}
+
 /**
  * Parse an MCP Streamable HTTP response body: plain JSON or SSE frames
  * (last `data:` JSON frame wins, `[DONE]` ignored).
@@ -89,10 +101,11 @@ export function parseMcpHttpBody(text: string): JsonRpcResponse {
   return { error: { code: -1, message: 'Unrecognized Paper MCP response: ' + trimmed.slice(0, 200) } }
 }
 
-/** Minimal Streamable HTTP MCP client with session tracking. */
+/** Minimal Streamable HTTP MCP client with session + bearer-token tracking. */
 export class PaperMcpClient {
   /** Base MCP endpoint (kept for future overrides; the default is {@link MCP_URL}). */
   private readonly endpoint: string
+  private auth: PaperMcpAuthProvider | undefined
 
   constructor(endpoint: string = MCP_URL) {
     this.endpoint = endpoint
@@ -104,6 +117,11 @@ export class PaperMcpClient {
 
   get isInitialized(): boolean {
     return this.initialized
+  }
+
+  /** Attach an OAuth provider whose bearer token rides every request. */
+  setAuthProvider(provider: PaperMcpAuthProvider | undefined): void {
+    this.auth = provider
   }
 
   resetSession(): void {
@@ -124,9 +142,10 @@ export class PaperMcpClient {
       clientInfo: { name: 'dsh-paper-design', version: '0.1.0' },
     })
     if (result.error) return result
-    await fetch(MCP_URL, {
+    const headers = await this.buildHeaders()
+    await fetch(this.endpoint, {
       method: 'POST',
-      headers: this.headers(),
+      headers,
       body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }),
     }).catch(() => {})
     this.initialized = true
@@ -143,12 +162,16 @@ export class PaperMcpClient {
     return this.rpc('tools/call', { name, arguments: args }, false, signal)
   }
 
-  private headers(): Record<string, string> {
+  private async buildHeaders(): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Accept: 'application/json, text/event-stream',
     }
     if (this.sessionId) headers['mcp-session-id'] = this.sessionId
+    if (this.auth !== undefined) {
+      const token = await this.auth.ensureAccessToken()
+      if (token !== undefined) headers.Authorization = `Bearer ${token}`
+    }
     return headers
   }
 
@@ -163,9 +186,9 @@ export class PaperMcpClient {
   async rpc(method: string, params: unknown, retried = false, signal?: AbortSignal): Promise<JsonRpcResponse> {
     const id = ++this.idCounter
     try {
-      const res = await fetch(MCP_URL, {
+      const res = await fetch(this.endpoint, {
         method: 'POST',
-        headers: this.headers(),
+        headers: await this.buildHeaders(),
         body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
         signal,
       })
@@ -175,6 +198,10 @@ export class PaperMcpClient {
       if (!res.ok) {
         const snippet = text.slice(0, 300)
         const message = 'HTTP ' + res.status + ' ' + res.statusText + (snippet ? ': ' + snippet : '')
+        // Surface auth challenges to the provider so it can flip into OAuth mode.
+        if (isAuthChallengeStatus(res.status)) {
+          this.auth?.handleChallenge(res.status, res.headers.get('www-authenticate'))
+        }
         if (!retried && isSessionError(message)) {
           this.resetSession()
           const init = await this.initialize()
