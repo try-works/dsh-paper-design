@@ -1,7 +1,7 @@
 {
   "name": "@try-works/dsh-paper-design",
   "description": "Paper Design MCP bridge as a DeepSeek Harness bundle: paper_* tools, image screenshot support, design skills, OAuth auth, and Cursor-parity design guidance.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
