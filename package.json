@@ -1,21 +1,20 @@
 {
-  "name": "dsh-paper-design",
-  "description": "Paper Design MCP bridge as a DeepSeek Harness bundle: paper_* tools, image screenshot support, design skills, and Cursor-parity design guidance.",
-  "version": "0.1.0",
+  "name": "@try-works/dsh-paper-design",
+  "description": "Paper Design MCP bridge as a DeepSeek Harness bundle: paper_* tools, image screenshot support, design skills, OAuth auth, and Cursor-parity design guidance.",
+  "version": "0.1.1",
   "type": "module",
-  "main": "lib/index.js",
-  "types": "lib/types/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./lib/types/index.d.ts",
-      "default": "./lib/index.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     },
     "./src/*": "./src/*",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
-    "lib",
     "cordis.patch.yml",
     "src",
     "skills",
@@ -47,15 +46,15 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-tools": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-system-prompt": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-attachment": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-skill": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-commands": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-llm": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-agent": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-scope": "0.1.0-rc.5",
-    "@deepseek-ai/dsh-session": "0.1.0-rc.5"
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-attachment": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-skill": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-commands": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-agent": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-scope": "^0.1.0-rc.5",
+    "@deepseek-ai/dsh-session": "^0.1.0-rc.5"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "file:D:/deepseek-harness/vendor/cordis",

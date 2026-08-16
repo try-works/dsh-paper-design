@@ -3,3 +3,6 @@ node_modules/
 lib/
 .coverage/
 .pnpm-store/
+.npm-cache*/
+.scratch-install-test/
+*.tgz
