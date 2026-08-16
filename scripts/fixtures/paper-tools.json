@@ -1,0 +1,1337 @@
+[
+  {
+    "name": "open_file",
+    "description": "Open a Paper file by its ID or URL, optionally at a specific page. When called any subsequent tool calls without fileId present will target this file. Returns the same result as get_basic_info.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Paper file ID to open. Accepts a bare ID, a /file/<id> route path, or a full https URL pointing at the file."
+        },
+        "pageId": {
+          "description": "The ID of a page to switch to within the file. Omit to keep the current page.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "fileId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "list_files",
+    "description": "Lists Paper files that the user has open, then files that have been recently accessed in their active team. Timestamps will be missing for files that are outside the users active team.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "limit": {
+          "description": "Maximum number of files to return. Defaults to 50. Files are sorted by updatedAt, most recent first.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "create_file",
+    "description": "Create a new Paper file in the user's active team and returns the new file's ID. To start working in the new file, call open_file with the returned ID.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "cloneFileId": {
+          "description": "Optional file ID to clone from. If provided, the new file is a copy of this one.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Optional display name for the new file.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "create_page",
+    "description": "Creates a new page in either the active file or an explicit file if fileId is provided, and returns its ID. Does not switch to the new page — call open_file with the fileId and the returned pageId to start working in it.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Optional display name for the new page (shown in the page list). Defaults to \"Page N\".",
+          "type": "string"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "get_basic_info",
+    "description": "Get essential context about the current design: file name, page name, node count, artboards with their dimensions, font families used, a compact list of design tokens.\nCall get_basic_info first to understand the canvas situation.\n- worldX/worldY properties are the world position of the node\n- x/y properties are the relative position of the node within its parent",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_selection",
+    "description": "Get detailed information about the currently selected nodes, including IDs, names, component types, size, and which artboard they belong to.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_node_info",
+    "description": "Get detailed information about a specific node by ID, including its size, visibility, lock state, parent, children IDs, text content (for text nodes), and the node's worldX/worldY (world position) and x/y (relative to parent). Returns an error if the node does not exist.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "description": "The ID of the node to inspect"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_children",
+    "description": "Get the direct children of a node. Returns a list of child nodes with their IDs, names, component types, how many children each has, and each child's worldX/worldY (world position) and x/y (relative to parent). Returns an error if the node does not exist.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "description": "The ID of the parent node to get children from"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_screenshot",
+    "description": "Capture a screenshot of a specific node by ID. Returns the image as base64-encoded data. Images are automatically capped to fit API size limits. Defaults to 1x scale which is sufficient for verifying layout, spacing, and visual appearance. Use scale=2 only when you need to read small text or inspect fine visual details. Capture child nodes when needing higher resolution screenshots.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "description": "The ID of the node to capture"
+        },
+        "transparent": {
+          "description": "Defaults to false. Whether the image should have a transparent background. If true, returns a PNG; otherwise, returns a JPEG. PNG files are larger.",
+          "type": "boolean"
+        },
+        "scale": {
+          "description": "Render scale factor. 1 (default) for layout checks and general visual understanding. 2 for reading small text or inspecting fine details.",
+          "type": "number"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_jsx",
+    "description": "Get the JSX code representation of a node and its descendants. Supports two styling formats: Tailwind CSS classes (default) or inline styles.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "description": "The ID of the node to generate JSX from"
+        },
+        "format": {
+          "description": "Style format: \"tailwind\" (default) uses Tailwind classes with inline fallback, \"inline-styles\" uses pure inline styles",
+          "type": "string",
+          "enum": [
+            "tailwind",
+            "inline-styles"
+          ]
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_tree_summary",
+    "description": "Get a compact text summary of a node's subtree hierarchy. Returns an indented tree showing each node's component type, name, ID, and dimensions. Much cheaper than getJSX for understanding structure — use this for orientation before diving into specific nodes. Returns an error if the node does not exist.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "description": "The ID of the root node to summarize"
+        },
+        "depth": {
+          "description": "Maximum depth to traverse (default 3, max 10). Nodes beyond this depth show a child count hint instead.",
+          "type": "number"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_computed_styles",
+    "description": "Get the computed CSS styles for one or more nodes. Returns a map of nodeId to CSSProperties object. Supports batch requests.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of node IDs to get styles from"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeIds"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_fill_image",
+    "description": "Extract the image data from a node that has an image fill. Returns the image as base64-encoded JPEG data optimized for AI consumption. Large images are automatically resized to fit within API size limits. The original image URL is included in the metadata if you need the full-quality source. Returns an error if the node does not exist, or a message if the node has no image fill.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string",
+          "description": "The ID of the node containing an image fill"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "find_nodes",
+    "description": "Find nodes by computed style and/or text content — useful for locating everything using a given token, literal value, or piece of copy before a bulk update. Searches the whole page, or pass nodeId to scope to a node and its descendants. Pass `filters`, `textValue`, or both (AND).\n`filters` are `{ styleName, styleValue }` matchers combined with AND (color is X AND fontSize is Y). `styleValue` may be a literal (\"#ff0000\", \"16px\") or a token (\"--color-primary\"). Both fields accept \"*\" wildcards and colors match by equivalence (\"#ccc\" == \"rgb(204, 204, 204)\"). A literal color query also finds token-bound usages (reported as the `var(--token)` reference), so to migrate a raw color to a token you can search the color directly. Omit one field to match any property or any value.\n`textValue` matches Text node content, case-insensitive, with \"*\" wildcards anchored to the whole value (\"Submit\", \"Get *\", \"*started*\").\nEach result has its ID, name, component, and a `matched` array of the `{ styleName, styleValue }` / `{ textValue }` entries that satisfied the query; for a color or token found inside a composite value (gradient/border), `styleValue` is the matched fragment, not the whole value.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "description": "Restrict the search to this node and its descendants. Omit to search the whole page.",
+          "type": "string"
+        },
+        "textValue": {
+          "description": "Match Text node content. Case-insensitive; \"*\" is a wildcard anchored to the whole value (\"foo*\", \"*foo*\", \"foo*bar\"). AND-combined with `filters`.",
+          "type": "string"
+        },
+        "filters": {
+          "description": "Style matchers combined with AND — a node must satisfy every one (plus `textValue`, if given).",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "styleName": {
+                "description": "CSS property to match, e.g. \"background-color\" or \"fontSize\". \"*\" wildcard (\"border-*\"). Omit to match any property.",
+                "type": "string"
+              },
+              "styleValue": {
+                "description": "Computed value to match: a literal (\"#ff0000\", \"16px\") or a token (\"--color-primary\" / \"var(--color-primary)\"). \"*\" wildcard; colors match by equivalence (\"#ccc\" == \"rgb(204, 204, 204)\"). A literal color also finds token-bound usages whose token resolves to it, reported as the var reference. Omit to match any value.",
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "list_comment_threads",
+    "description": "List visible comment threads in the open file as compact summaries. A comment thread is a conversation pinned to a node: a first message plus reply messages, each with its own author, and an \"open\" or \"resolved\" workflow status. Lists only open (unresolved) threads by default. Use this first to discover relevant discussion, then call get_comment_thread for full replies. If you are tasked and fully addressing a thread's feedback, mark it done with set_comment_thread_status. Supports page, node, status, author, search, sort, and pagination filters. User ID filters accept \"current-user\" for the signed-in user. Deleted threads/messages are never returned.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "pageId": {
+          "description": "Optional page ID to list comment threads from. Omit to include all pages.",
+          "type": "string"
+        },
+        "currentPageOnly": {
+          "description": "If true, list only comment threads on the current page. Ignored when pageId is provided.",
+          "type": "boolean"
+        },
+        "nodeId": {
+          "description": "Optional node ID to list comment threads pinned to.",
+          "type": "string"
+        },
+        "status": {
+          "description": "Filter by status. Defaults to \"open\": only unresolved comment threads, which are the ones still needing action. Pass \"resolved\" for finished threads or \"all\" for both.",
+          "type": "string",
+          "enum": [
+            "open",
+            "resolved",
+            "all"
+          ]
+        },
+        "search": {
+          "description": "Case-insensitive search over author display names and visible message text.",
+          "type": "string"
+        },
+        "searchScope": {
+          "description": "Search only the first visible message of each comment thread, or all visible messages. Defaults to \"all-messages\".",
+          "type": "string",
+          "enum": [
+            "first-message",
+            "all-messages"
+          ]
+        },
+        "participantUserId": {
+          "description": "Only return comment threads where this user wrote at least one visible message (thread author or replier). Pass \"current-user\" for the signed-in user you are acting on behalf of. For anyone else, use an authorUserId from earlier results; never guess user IDs.",
+          "type": "string"
+        },
+        "threadAuthorUserId": {
+          "description": "Only return comment threads started by this user (replies by them do not count; use participantUserId for that). Pass \"current-user\" for the signed-in user you are acting on behalf of. For anyone else, use an authorUserId from earlier results; never guess user IDs.",
+          "type": "string"
+        },
+        "sortField": {
+          "description": "Field to sort by. Defaults to \"page\", matching the comment panel.",
+          "type": "string",
+          "enum": [
+            "page",
+            "createdAt",
+            "updatedAt"
+          ]
+        },
+        "sortDirection": {
+          "description": "Sort direction. Defaults to \"asc\".",
+          "type": "string",
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        },
+        "limit": {
+          "description": "Maximum comment threads to return. Defaults to 50.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "offset": {
+          "description": "Number of matching comment threads to skip. Defaults to 0.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "previewLength": {
+          "description": "Maximum characters for each first-message preview. Defaults to 240.",
+          "type": "integer",
+          "minimum": 20,
+          "maximum": 1000
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_comment_thread",
+    "description": "Get full details for one visible comment thread, including its open/resolved status, all reply messages, reactions, attachments, page context, and pinned node context. Works for any status. Call list_comment_threads first when you do not already know the commentThreadId. Deleted threads/messages are never returned.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "commentThreadId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The ID of the comment thread to read."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "commentThreadId"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "list_comment_thread_authors",
+    "description": "List every user who has started a comment thread or written a visible message in the open file, with their user ID, display name, activity counts, and last activity time. Use this to resolve a person's name to a userId before filtering list_comment_threads by participantUserId or threadAuthorUserId. Deleted threads/messages are never counted.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "pageId": {
+          "description": "Optional page ID to only count comment thread activity on that page. Omit to include all pages.",
+          "type": "string"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "set_comment_thread_status",
+    "description": "Set the workflow status of one comment thread to \"resolved\" or \"open\". Resolve a thread once its feedback has been fully addressed in the design — this is how you mark review comments as done. Reopen a resolved thread if more work turns out to be needed. Use list_comment_threads or get_comment_thread to find the commentThreadId.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "commentThreadId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The ID of the comment thread to update."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "resolved"
+          ],
+          "description": "The new workflow status. Set \"resolved\" once the feedback is fully addressed; set \"open\" to reopen."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "commentThreadId",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "get_font_family_info",
+    "description": "Get information about whether a font family is available to the user and detailed information about all weights and styles in the family. This tool looks up fonts on the user's machine and Google Fonts.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "familyNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names of the font families to look up."
+        }
+      },
+      "required": [
+        "familyNames"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_guide",
+    "description": "Read a detailed guide on a specific topic. Call with topic \"paper-mcp-instructions\" before using other Paper tools for best results. Guides provide step-by-step workflows for design quality, review checkpoints, and specialized tasks.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "string",
+          "description": "The guide topic to read. Available topics:\n\"paper-mcp-instructions\" — Step-by-step guide to using the Paper MCP server to its max power\n\"mobile-status-bar\" — Paste-ready status bar markup for mobile artboards\n\"figma-import\" — Step-by-step workflow for bringing Figma designs into Paper"
+        }
+      },
+      "required": [
+        "topic"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "export",
+    "description": "Export nodes as image or video files. Unless the user specifies, do not override the default export settings.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "Export type, defaults to \"image\".",
+          "type": "string",
+          "enum": [
+            "image",
+            "video"
+          ]
+        },
+        "nodes": {
+          "anyOf": [
+            {
+              "type": "string",
+              "const": "nodes-with-exports-only",
+              "description": "Exports all nodes that are already marked to export explicitly set in the file."
+            },
+            {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "format": {
+                      "type": "string",
+                      "enum": [
+                        "avif",
+                        "jpg",
+                        "mp4",
+                        "pdf",
+                        "png",
+                        "svg",
+                        "webp"
+                      ]
+                    },
+                    "scale": {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d+)?(x|w|h|p)$",
+                      "description": "Export scale. A number followed by a unit: \"x\" (multiplier, e.g. \"0.5x\", \"1x\", \"2x\"), \"p\" (pixels on shortest side, e.g. \"720p\", \"1440p\"), \"w\" (target width, e.g. \"512w\"), or \"h\" (target height, e.g. \"512h\")"
+                    },
+                    "durationSeconds": {
+                      "description": "Video duration in seconds. Only applicable when type is \"video\".",
+                      "default": 10,
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 300
+                    },
+                    "pdfQuality": {
+                      "description": "PDF image quality for images. Only applicable when format is \"pdf\".",
+                      "default": "high",
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ]
+                    },
+                    "pdfResampling": {
+                      "description": "PDF image resizing resampling strategy. \"detailed\" preserves fine detail with the Lanczos algorithm, \"basic\" produces smaller files and uses the Hamming algorithm. Only applicable when format is \"pdf\".",
+                      "default": "detailed",
+                      "type": "string",
+                      "enum": [
+                        "detailed",
+                        "basic"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "format",
+                    "scale"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Used to override the default export settings for the node. Set to an empty array `[]` to export with default settings."
+              },
+              "description": "Record of nodes to export, keyed by nodeId."
+            }
+          ]
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodes"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "export_combined_pdf",
+    "description": "Export multiple nodes combined into a single PDF file, one page per node. Pages are auto-ordered by canvas position (top-to-bottom, then left-to-right). Use this instead of \"export\" when the user wants the nodes merged into one PDF rather than separate files. The quality and resampling used is the highest of any existing PDF export settings found on individual nodes.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeIds": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Node IDs to combine into a single PDF, one page per node. Pages are auto-ordered by top-to-bottom then left-to-right canvas position."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeIds"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "write_html",
+    "description": "IMPORTANT: Write incrementally. The user sees you write on the canvas in real-time. Show them visual progress every few seconds.\nEach write_html call should create one visual item: a header, a single list row, a button bar, or a paragraph block.\nEven simple components should be incremental: e.g. a card: first the container/header, then each row, then the footer.\nIMPORTANT: Clone to save tokens instead of recreating existing Paper nodes. Use `<x-paper-clone node-id=\"A-01\" style=\"...\" />` to slot clones into the HTML you write.\nFor repeated elements: create the container first, then add each item as a separate write_html call into the container or use the duplicate tool on the first child.\n\nHTML and CSS rules:\n- Always use inline styles (style=\"..\")\n- Enforce consistency with design tokens as CSS variables if available\n- All Google Fonts are available in font-family (e.g. font-family: \"Font Name\", serif). Locally installed fonts work\n- All CSS color formats are supported: hex, rgb, rgba, hsl, hsla, oklch, oklab etc\n- Use flex as the primary layout mode. Flexbox, padding, and gap are the core layout tools in Paper's interface\n- Absolute position is fully supported. Use it for decorative elements. Avoid covering the entire artboard with a single absolute element, it blocks cursor interaction underneath\n- Do NOT use: margin, display: inline, display: grid, HTML tables. Use padding and gap for spacing\n- display: block is acceptable for simple elements (text, decorative shapes) but not for layout containers\n- Assume border-box sizing everywhere\n- Use <pre> or white-space: pre for code blocks or indented text\n- Do NOT use emojis as icons. Use SVG icons or images\n- Rich text isn't supported in Paper, for code snippets make a single element with one text color and use pre for whitespace\n- Use the layer-name attribute to set names on elements in the Paper layer tree, e.g. <div layer-name=\"Hero\">\n- Local images MUST use absolute paths in an img starting with paper-asset:// e.g. <img src=\"paper-asset:///Users/name/image.svg\">",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "html": {
+          "type": "string",
+          "description": "HTML string to parse into design nodes. Supports standard HTML elements with inline CSS styles."
+        },
+        "targetNodeId": {
+          "type": "string",
+          "description": "The ID of the target node. In \"insert-children\" mode, new nodes are added as children of this node. In \"replace\" mode, this node is removed and replaced by the parsed HTML."
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "insert-children",
+            "replace"
+          ],
+          "description": "\"insert-children\" adds the HTML as children of the target node. \"replace\" removes the target node and puts the parsed HTML in its place."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "html",
+        "targetNodeId",
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "create_artboard",
+    "description": "\nCreates a new artboard (top-level frame) on the canvas.\n- Returns the node ID which you can then use with write_html({mode:'insert-children'}) to add content.\n- Use the styles property to set the artboard size and styles.\n- Artboards default to `display: \"flex\", flexDirection: \"column\"`\n- The artboard will always be placed in the best empty spot on the canvas.\n- Use one of the default sizes below unless the user specifies a size.\n\n**Default sizes by device** (when the user doesn't specify a size):\n  - **Desktop**: 1440 x 900px\n  - **Tablet**: 768 x 1024px\n  - **Mobile**: 390 x 844px — include a status bar at the top. Call `get_guide({ topic: \"mobile-status-bar\" })` for paste-ready markup; do not hand-draw one.\n\nThe suggested device height is just a starting point to set the scene and understand how much space there is for the content above the fold. When wrapping up, if content clips, switch the artboard to `height: \"fit-content\"` via update_styles instead of guessing a new fixed height.\n",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name for the artboard (shown in the layer tree)."
+        },
+        "styles": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "string",
+              "description": "Width of the artboard as a whole pixel value (e.g. \"1440px\")."
+            },
+            "height": {
+              "type": "string",
+              "description": "Height of the artboard as a whole pixel value (e.g. \"900px\")."
+            }
+          },
+          "required": [
+            "width",
+            "height"
+          ],
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "description": "CSS styles for the artboard as a JSON object. Use camelCase property names.\nwidth and height are required — use whole pixel values.\nWhen positioning an artboard make sure to give 80px of space between artboards to avoid overlaps.\nExample: {\"display\": \"flex\", \"flexDirection\": \"column\", \"width\": \"1440px\", \"height\": \"900px\", \"backgroundColor\": \"#f5f5f5\", \"padding\": \"20px\"}"
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "styles"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "delete_nodes",
+    "description": "Delete one or more nodes from the design. Also deletes all descendants of the specified nodes.\nIMPORTANT: Before deleting nodes that you think have an incorrect parent verify using get_node_info first.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of node IDs to delete."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodeIds"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "set_text_content",
+    "description": "Set the text content of one or more Text nodes. Only works on nodes with component type \"Text\". Use this instead of writeHTML replace when you only need to change text. Supports batch updates in a single call.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "updates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nodeId": {
+                "type": "string",
+                "description": "The ID of the Text node to update."
+              },
+              "textContent": {
+                "type": "string",
+                "description": "The new text content."
+              }
+            },
+            "required": [
+              "nodeId",
+              "textContent"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of text updates to apply. Each item specifies a node ID and its new text content."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "updates"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "rename_nodes",
+    "description": "Rename one or more layers in the design. Sets the display name shown in the layer tree. Names longer than 50 characters are automatically truncated. Supports batch renames in a single call.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "updates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nodeId": {
+                "type": "string",
+                "description": "The ID of the node to rename."
+              },
+              "name": {
+                "type": "string",
+                "description": "The new display name for the layer."
+              }
+            },
+            "required": [
+              "nodeId",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of rename updates. Each item specifies a node ID and its new name."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "updates"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "update_styles",
+    "description": "Update styles on one or more nodes. Use this for targeted style changes. Supports design tokens as CSS variables. Supports batch updates in a single call.\n- Setting the top / left styles of an artboard changes its position on the canvas.\n- Styles you set that are inert in the node's context are dropped rather than applied; their keys are returned under the ignoredStyles property.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "updates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nodeIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "The IDs of the nodes to update."
+              },
+              "styles": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "description": "Styles as a JSON object with camelCase property names (e.g. {\"backgroundColor\": \"#fff\", \"padding\": \"20px\"}), like React.CSSProperties."
+              }
+            },
+            "required": [
+              "nodeIds",
+              "styles"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of style updates to apply. Each item specifies node IDs and styles to apply to all of them."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "updates"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "duplicate_nodes",
+    "description": "Duplicate one or more nodes in the design. Creates a deep clone of each node (including all descendants). Duplicated artboards are automatically positioned in a blank area to avoid overlap. Returns the source and new node IDs, plus a descendantIdMap that maps every original descendant ID to its cloned equivalent. Since you already know the source tree structure, you can use this map to immediately reference any cloned node (e.g. to call setTextContent) without any intermediate lookups.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "The ID of the node to duplicate."
+              },
+              "parentId": {
+                "description": "Optional. The ID of the parent node to place the duplicate under. If omitted, the duplicate is placed under the same parent as the source node.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Array of nodes to duplicate. Each item specifies a node ID and optionally a parent ID for where to place the duplicate. If no parent ID is provided, duplicates are placed under the same parent as their source node."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nodes"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "move_nodes",
+    "description": "Move one or more existing nodes. Preserves node identity (IDs stay the same), so any references you are holding continue to work. Prefer this over duplicate+delete or rewriting HTML when you just want to reposition or reparent existing layers.\n\nEach move uses one of two shapes:\n1. Sibling-relative: { nodeId, before: siblingId } or { nodeId, after: siblingId }. The destination parent is inferred from the sibling.\n2. Parent-absolute: { nodeId, parentId, index? }. The node is placed at the given index under parentId, or appended if index is omitted. index is clamped to [0, childCount] — use 0 for first. Pass parentId: 'root' as a shortcut for the top-level page root as a parent.\n\nUse shape sibling-relative shape 1 when you already know a neighbor; use parent-absolute shape 2 when you want to move into a specific parent (or to the end of one).\n\nNotes:\n- Moves apply sequentially; later moves in the same batch see earlier changes.\n- For flex/flow parents this changes visual order. For freeform parents this changes stacking (last child renders on top) and does not move the node's world position.\n- When moving to a new parent, Paper may adjust layout-related styles (width/height intents like filling available space) may be adjusted so the node does not collapse to zero size in the new parent.\n- Cannot move the root. Cannot target a node that cannot have children. Cannot move a node under itself or any of its own descendants. For before/after, the sibling cannot be the moved node itself.\nReturns resolved parentId and index for each successful move, plus affectedParents — the post-batch children list of every parent whose order changed (both sources and destinations, deduplicated). Use affectedParents to refresh your mental model of the tree without a follow-up get_children.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "moves": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "nodeId": {
+                    "type": "string",
+                    "description": "The ID of the node to move."
+                  },
+                  "before": {
+                    "type": "string",
+                    "description": "Place the node immediately before this sibling. The target parent is inferred from the sibling."
+                  }
+                },
+                "required": [
+                  "nodeId",
+                  "before"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "nodeId": {
+                    "type": "string",
+                    "description": "The ID of the node to move."
+                  },
+                  "after": {
+                    "type": "string",
+                    "description": "Place the node immediately after this sibling. The target parent is inferred from the sibling."
+                  }
+                },
+                "required": [
+                  "nodeId",
+                  "after"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "nodeId": {
+                    "type": "string",
+                    "description": "The ID of the node to move."
+                  },
+                  "parentId": {
+                    "type": "string",
+                    "description": "The ID of the destination parent. Must be able to have children (e.g. Frames). Pass the string `'root'` as a shortcut for the top-level page root (same as the rootNodeId returned by get_basic_info)."
+                  },
+                  "index": {
+                    "description": "The final index among the destination parent's children. Clamped to [0, childCount]. Use 0 for first, or omit to append at the end.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "nodeId",
+                  "parentId"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "description": "Move operations, applied sequentially. Each operation sees the updated tree from prior operations."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "moves"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "finish_working_on_nodes",
+    "description": "MUST call this when done working.\nRemove the working indicator from artboards you were editing.\n\nCall with no arguments to release all working indicators at once. Optionally pass specific artboard IDs if you want to release only some.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "nodeIds": {
+          "description": "Optional. Specific node IDs to release. If omitted, all working indicators are released.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_tokens",
+    "description": "List the file's design tokens (colors, spacing, typography, etc).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "types": {
+          "description": "Filter by design token type(s). Omit to include all types.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "breakpoint",
+              "color",
+              "container",
+              "fontFamily",
+              "fontSize",
+              "fontWeight",
+              "letterSpacing",
+              "lineHeight",
+              "radius",
+              "spacing"
+            ]
+          }
+        },
+        "namePattern": {
+          "description": "Glob pattern matched against the full CSS variable name (case-insensitive). Use \"*\" as a wildcard. Examples: \"--color-primary\", \"--color-*\", \"*-500\", \"*brand*\". Omit to skip name filtering.",
+          "type": "string"
+        },
+        "format": {
+          "description": "Output format. \"json\" (default) returns structured tokens. \"css\" returns a vanilla `:root { ... }` stylesheet. \"tailwind\" returns a Tailwind v4 `@theme { ... }` block with namespaced variables.",
+          "type": "string",
+          "enum": [
+            "json",
+            "css",
+            "tailwind"
+          ]
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "create_tokens",
+    "description": "Create one or more design tokens. Each entry needs `type`, `name`, and `value`.\nUse `var(--other-token)` as the value to alias another design token.\nReturns one `{name, result: \"created\"}` (or `{result: \"error\", message}`) per input entry.\nOrder is important. For color tokens define semantic colors before palette colors, with neutral colors first, then primary, secondary, and then accent colors. For all other design token types define them based on the size of the value, smallest first.\nPrefer reusing design tokens before creating new ones.\n",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "breakpoint",
+                  "color",
+                  "container",
+                  "fontFamily",
+                  "fontSize",
+                  "fontWeight",
+                  "letterSpacing",
+                  "lineHeight",
+                  "radius",
+                  "spacing"
+                ],
+                "description": "Design token type/category."
+              },
+              "name": {
+                "type": "string",
+                "pattern": "^--[a-zA-Z0-9_-]+$",
+                "description": "CSS custom property name. E.g. \"--color-primary\"."
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "Design token value. For colors, use a CSS color string like \"#ff0000\" or \"oklch(...)\". For sizes (spacing, radius, fontSize, container, breakpoint), use a px string like \"8px\". For fontWeight, use a number (e.g. 400). For lineHeight/letterSpacing, use a string (\"1.5px\") or number. To alias another design token, use a CSS variable reference like \"var(--color-red)\"."
+              },
+              "description": {
+                "description": "Optional human-readable description of what the design token is for and how it should be used. Max 1024 characters.",
+                "type": "string",
+                "maxLength": 1024
+              }
+            },
+            "required": [
+              "type",
+              "name",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Design tokens to create. Each entry creates a new design token; duplicate names are allowed but discouraged."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tokens"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  },
+  {
+    "name": "set_tokens",
+    "description": "Update or delete existing design tokens by their full CSS variable name. Each entry needs `name`; any of `newName`, `value`, `delete` are optional.\n- Rename: set `newName`.\n- Update value: set `value`. Use `var(--other-token)` to alias.\n- Delete the design token: set `delete: true`.\nReturns one result per input entry. Per-entry errors are reported in-band.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^--[a-zA-Z0-9_-]+$",
+                "description": "Target design token by its full CSS custom property name (e.g. \"--color-primary\")."
+              },
+              "newName": {
+                "description": "Optional. Rename the design token. Provide the full CSS custom property name (e.g. \"--color-primary-strong\").",
+                "type": "string",
+                "pattern": "^--[a-zA-Z0-9_-]+$"
+              },
+              "value": {
+                "description": "Optional. New value.",
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "description": {
+                "description": "Optional human-readable description of what the design token is for and how it should be used. Max 1024 characters. Pass an empty string to clear.",
+                "type": "string",
+                "maxLength": 1024
+              },
+              "delete": {
+                "description": "Optional. If true, deletes the design token entirely.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "description": "Design tokens to update or delete, applied sequentially."
+        },
+        "fileId": {
+          "description": "Optional. The Paper file ID this call should act on. Pass it to reliably target a specific file when several are open at once (e.g. multiple agents from the same session working in parallel). Omit to use the most recently opened file in the session.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tokens"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "destructiveHint": true
+    }
+  }
+]

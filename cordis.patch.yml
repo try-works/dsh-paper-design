@@ -1,0 +1,16 @@
+# dsh-paper-design bundle patch: inserts the Paper MCP bridge plugin over the
+# profile root. The bridge connects to the Paper Desktop MCP server
+# (http://127.0.0.1:29979/mcp), registers paper_* tools on ctx.tools, injects
+# the Cursor-parity design guidance as a prompt section, registers the
+# paper-design skills, and exposes the /paper-reconnect command.
+#
+# The cordis:group realm keeps the service registrations out of the root realm
+# so the same bundle can be composed more than once without colliding.
+- insert:
+    - id: paper-realm
+      name: cordis:group
+      isolate:
+        paperDesign: true
+      config:
+        - id: paper-mcp
+          name: dsh-paper-design/src/index.ts
