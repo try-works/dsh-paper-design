@@ -51,8 +51,12 @@ Then `pnpm install` in the profile and restart the running DSH process. The brid
 
 ```bash
 pnpm install
-pnpm exec tsc -p tsconfig.json --noEmit   # type-check
-node scripts/smoke-bridge.mts            # live MCP smoke test (needs Paper Desktop)
+pnpm run build                        # type-check (tsc -p tsconfig.build.json)
+pnpm run verify                       # live MCP bridge verification (needs Paper Desktop)
+pnpm run verify:bridge                # in-process plugin boot + live paper_get_basic_info
+pnpm run verify:parity                # Cursor/pi skill-body parity
+pnpm run verify:injection             # prompt-section marker/budget logic
+pnpm test                             # everything above
 ```
 
 ## Layout
