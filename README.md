@@ -29,20 +29,20 @@ Add this package to the profile and its `bundles` list, e.g. in `~/.dsh/profiles
 ```json
 {
   "dependencies": {
-    "dsh-paper-design": "link:D:/DEV/dsh-paper-design"
+    "@try-works/dsh-paper-design": "^0.1.4"
   },
   "dsh": {
     "profile": {
       "bundles": [
         "@deepseek-ai/dsh-base",
-        "dsh-paper-design"
+        "@try-works/dsh-paper-design"
       ]
     }
   }
 }
 ```
 
-Then `pnpm install` in the profile and restart the running DSH process. The bridge imports its `src/index.ts` directly through the loader bundle path (no build required), mirroring `dsh-recursive-mode`.
+Then `pnpm install` in the profile and restart the running DSH process. The bridge ships its `src/*.ts` sources directly (DSH loads them through `tsx`), mirroring `dsh-recursive-mode`.
 
 > Restart is required for host/bundle changes: the web client-plugin HMR only rebuilds the web shell, not host plugins.
 
