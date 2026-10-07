@@ -19,6 +19,7 @@ Connects to the **Paper Desktop** MCP server (`http://127.0.0.1:29979/mcp`), reg
 ## Requirements
 
 - **Paper Desktop** running with a file open (the MCP server lives inside the desktop app).
+- **DSH** `0.2.0-rc.2` or `0.1.0-rc.5`+ — the plugin declares matching `@deepseek-ai/dsh-*` peer ranges, and DSH refuses to load it on a runtime outside them.
 - A DeepSeek Harness profile that bundles `@deepseek-ai/dsh-base` (or the services it mounts): `tools`, `systemPrompt`, `attachments` (for images), `skills`, `commands`, `llm`.
 - An image-capable model route for screenshot support (text tools work on any route).
 
@@ -29,7 +30,7 @@ Add this package to the profile and its `bundles` list, e.g. in `~/.dsh/profiles
 ```json
 {
   "dependencies": {
-    "@try-works/dsh-paper-design": "^0.1.4"
+    "@try-works/dsh-paper-design": "^0.1.5"
   },
   "dsh": {
     "profile": {

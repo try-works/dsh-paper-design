@@ -18,7 +18,8 @@ import type { AttachmentStore, ImageMediaType } from '@deepseek-ai/dsh-attachmen
 import type {} from '@deepseek-ai/dsh-skill'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { JsonValue, ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import { PaperMcpClient, MCP_URL, type McpCallToolResult, type McpContentPart } from './mcp-client.ts'
 import { PaperAuthManager, openBrowser } from './auth.ts'
 import { normalizeToolSchema } from './schema.ts'
@@ -29,11 +30,24 @@ import {
 } from './guide.ts'
 import { applySkills } from './skills.ts'
 
+/**
+ * This bridge is its own context producer, and the harness has no shared
+ * catch-all `plugin` source kind: `MessageSourceMap` is merge-extensible with
+ * one `kind` declared by each producer in its own module (mirroring
+ * `dsh-tools`' `tool-registry` and `dsh-user-approval`'s `user-approval`).
+ */
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    /** Image/text context the Paper bridge defers to its parent agent. */
+    'paper-design': { kind: 'paper-design' }
+  }
+}
+
 export const name = 'dsh-paper-design'
 export const inject = ['tools', 'systemPrompt']
 
-/** Deterministic bridge name to source injected image context. */
-const PLUGIN_SOURCE = 'dsh-paper-design'
+/** Source kind carried by context this bridge defers to a parent agent. */
+const CONTEXT_SOURCE_KIND = 'paper-design'
 
 /** Prompt section order inside the tool-guidance band (100–199). */
 const STANDING_SECTION_ORDER = 150
@@ -222,7 +236,7 @@ function createToolDefinition(
       if (exec.parent !== undefined && blocks.length > 0) {
         exec.deferContext(createUserMessage({
           content: blocks,
-          source: { kind: 'plugin', plugin: PLUGIN_SOURCE },
+          source: { kind: CONTEXT_SOURCE_KIND },
         }))
       }
       // Canonical value mirrors the MCP content; text blocks stored as strings.
